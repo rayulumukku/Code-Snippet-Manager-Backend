@@ -1,0 +1,94 @@
+import mongoose from 'mongoose';
+
+const snippetSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 200,
+    },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: 1000,
+    },
+    code: {
+      type: String,
+      required: true,
+    },
+    language: {
+      type: String,
+      required: true,
+      enum: [
+        'javascript',
+        'python',
+        'java',
+        'cpp',
+        'c',
+        'csharp',
+        'ruby',
+        'go',
+        'rust',
+        'php',
+        'swift',
+        'kotlin',
+        'typescript',
+        'html',
+        'css',
+        'sql',
+        'json',
+        'xml',
+        'markdown',
+        'shell',
+        'other',
+      ],
+      default: 'javascript',
+    },
+    tags: {
+      type: [String],
+      default: [],
+    },
+    isPublic: {
+      type: Boolean,
+      default: false,
+    },
+    author: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    forkedFrom: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Snippet',
+      default: null,
+    },
+    forkCount: {
+      type: Number,
+      default: 0,
+    },
+    views: {
+      type: Number,
+      default: 0,
+    },
+    collections: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Collection',
+      },
+    ],
+  },
+  {
+    timestamps: true,
+  }
+);
+
+
+snippetSchema.index({ title: 'text', description: 'text', tags: 'text' }, { default_language: 'english', language_override: 'searchLang' });
+snippetSchema.index({ language: 1, isPublic: 1 });
+snippetSchema.index({ author: 1 });
+
+const Snippet = mongoose.model('Snippet', snippetSchema);
+
+export default Snippet;
+
