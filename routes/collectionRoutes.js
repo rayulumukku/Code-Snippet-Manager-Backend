@@ -161,16 +161,10 @@ router.post('/:id/snippets/:snippetId', protect, async (req, res) => {
     }
 
  
+    // Check if trying to add a private snippet to a public collection
     if (!snippet.isPublic && collection.isPublic) {
       return res.status(400).json({ 
         message: 'Private snippets can only be added to private collections. Make your collection private first.' 
-      });
-    }
-
-
-    if (snippet.isPublic && !collection.isPublic) {
-      return res.status(400).json({ 
-        message: 'Public snippets can only be added to public collections. Make your collection public first.' 
       });
     }
 

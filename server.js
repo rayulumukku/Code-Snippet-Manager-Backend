@@ -31,6 +31,7 @@ mongoose
   .then(async () => {
     console.log('MongoDB connected successfully');
 
+    /* 
     try {
       const collection = mongoose.connection.collection('snippets');
       const indexes = await collection.indexes();
@@ -39,10 +40,10 @@ mongoose
         await collection.dropIndex(textIndex.name);
         console.log('Dropped old text index - will be recreated');
       }
- 
     } catch (indexError) {
       console.log('Index update skipped:', indexError.message);
     }
+    */
     
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);

@@ -79,10 +79,24 @@ router.get('/', optionalAuth, async (req, res) => {
 
   
       if (q) {
-        query.$or = [
-          { name: { $regex: q, $options: 'i' } },
-          { description: { $regex: q, $options: 'i' } }
-        ];
+        const searchFilter = {
+          $or: [
+            { name: { $regex: q, $options: 'i' } },
+            { description: { $regex: q, $options: 'i' } }
+          ]
+        };
+        
+        if (query.$or) {
+          // If we already have a privacy $or filter, wrap both in $and
+          const existingOr = query.$or;
+          delete query.$or;
+          query.$and = [
+            { $or: existingOr },
+            searchFilter
+          ];
+        } else {
+          query.$or = searchFilter.$or;
+        }
       }
 
       const collections = await Collection.find(query)
