@@ -3,6 +3,7 @@ import { body, validationResult } from 'express-validator';
 import Collection from '../models/Collection.js';
 import Snippet from '../models/Snippet.js';
 import { protect, optionalAuth } from '../middleware/auth.js';
+import { validateProfanity } from '../utils/profanityFilter.js';
 
 const router = express.Router();
 
@@ -68,6 +69,12 @@ router.post(
         return res.status(400).json({ errors: errors.array() });
       }
 
+      // Profanity check
+      const profanityError = validateProfanity(req.body, ['name', 'description']);
+      if (profanityError) {
+        return res.status(400).json({ message: profanityError });
+      }
+
       const collection = await Collection.create({
         ...req.body,
         owner: req.user._id,
@@ -96,6 +103,12 @@ router.put('/:id', protect, async (req, res) => {
    
     if (collection.owner.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to update this collection' });
+    }
+
+    // Profanity check
+    const profanityError = validateProfanity(req.body, ['name', 'description']);
+    if (profanityError) {
+      return res.status(400).json({ message: profanityError });
     }
 
     const updatedCollection = await Collection.findByIdAndUpdate(

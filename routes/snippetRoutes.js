@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import Snippet from '../models/Snippet.js';
 import Collection from '../models/Collection.js';
 import { protect, optionalAuth } from '../middleware/auth.js';
+import { validateProfanity } from '../utils/profanityFilter.js';
 
 const router = express.Router();
 
@@ -131,6 +132,12 @@ router.post(
         return res.status(400).json({ errors: errors.array() });
       }
 
+      // Profanity check
+      const profanityError = validateProfanity(req.body, ['title', 'description']);
+      if (profanityError) {
+        return res.status(400).json({ message: profanityError });
+      }
+
       const snippet = await Snippet.create({
         ...req.body,
         author: req.user._id,
@@ -159,6 +166,12 @@ router.put('/:id', protect, async (req, res) => {
    
     if (snippet.author.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to update this snippet' });
+    }
+
+    // Profanity check
+    const profanityError = validateProfanity(req.body, ['title', 'description']);
+    if (profanityError) {
+      return res.status(400).json({ message: profanityError });
     }
 
     const updatedSnippet = await Snippet.findByIdAndUpdate(
