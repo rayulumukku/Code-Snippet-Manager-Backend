@@ -5,55 +5,41 @@ import { optionalAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-
 router.get('/', optionalAuth, async (req, res) => {
   try {
     const { q, language, tags, author, type = 'snippets', page = 1, limit = 20 } = req.query;
 
     if (type === 'snippets') {
-      const query = {};
+      // Build the privacy filter
+      const privacyFilter = req.user
+        ? { $or: [{ isPublic: true }, { author: req.user._id }] }
+        : { isPublic: true };
 
-
-      if (req.user) {
-        query.$or = [
-          { isPublic: true },
-          { author: req.user._id }
-        ];
-      } else {
-        query.isPublic = true;
-      }
-
-      if (q) {
-        query.$text = { $search: q };
-      }
-
-      if (language) {
-        query.language = language;
-      }
+      // Build the search filter
+      const searchFilter = {};
+      if (q) searchFilter.$text = { $search: q };
+      if (language) searchFilter.language = language;
       if (tags) {
-        const tagArray = Array.isArray(tags) ? tags : tags.split(',');
-        query.tags = { $in: tagArray };
+        const tagArray = Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim());
+        searchFilter.tags = { $in: tagArray };
       }
-      if (author) {
-        query.author = author;
+      if (author) searchFilter.author = author;
+
+      // Merge filters properly with $and to avoid $or collisions
+      let query;
+      if (Object.keys(searchFilter).length > 0) {
+        query = { $and: [privacyFilter, searchFilter] };
+      } else {
+        query = privacyFilter;
       }
 
       const skip = (parseInt(page) - 1) * parseInt(limit);
 
-      let snippets;
-      if (q) {
-        snippets = await Snippet.find(query)
-          .populate('author', 'username')
-          .sort({ score: { $meta: 'textScore' } })
-          .skip(skip)
-          .limit(parseInt(limit));
-      } else {
-        snippets = await Snippet.find(query)
-          .populate('author', 'username')
-          .sort({ createdAt: -1 })
-          .skip(skip)
-          .limit(parseInt(limit));
-      }
+      const snippets = await Snippet.find(query)
+        .populate('author', 'username avatar')
+        .sort(q ? { score: { $meta: 'textScore' } } : { createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit));
 
       const total = await Snippet.countDocuments(query);
 
@@ -64,40 +50,29 @@ router.get('/', optionalAuth, async (req, res) => {
         currentPage: parseInt(page),
         total,
       });
-    } else if (type === 'collections') {
-      const query = {};
+    }
 
-   
-      if (req.user) {
-        query.$or = [
-          { isPublic: true },
-          { owner: req.user._id }
-        ];
-      } else {
-        query.isPublic = true;
-      }
+    if (type === 'collections') {
+      // Build the privacy filter
+      const privacyFilter = req.user
+        ? { $or: [{ isPublic: true }, { owner: req.user._id }] }
+        : { isPublic: true };
 
-  
+      // Build the search filter
+      let searchFilter = null;
       if (q) {
-        const searchFilter = {
+        searchFilter = {
           $or: [
             { name: { $regex: q, $options: 'i' } },
-            { description: { $regex: q, $options: 'i' } }
-          ]
+            { description: { $regex: q, $options: 'i' } },
+          ],
         };
-        
-        if (query.$or) {
-          // If we already have a privacy $or filter, wrap both in $and
-          const existingOr = query.$or;
-          delete query.$or;
-          query.$and = [
-            { $or: existingOr },
-            searchFilter
-          ];
-        } else {
-          query.$or = searchFilter.$or;
-        }
       }
+
+      // Merge properly with $and
+      const query = searchFilter
+        ? { $and: [privacyFilter, searchFilter] }
+        : privacyFilter;
 
       const collections = await Collection.find(query)
         .populate('owner', 'username')
@@ -119,4 +94,3 @@ router.get('/', optionalAuth, async (req, res) => {
 });
 
 export default router;
-

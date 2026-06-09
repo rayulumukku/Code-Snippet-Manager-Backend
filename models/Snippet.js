@@ -71,6 +71,16 @@ const snippetSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    likes: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
+    likeCount: {
+      type: Number,
+      default: 0,
+    },
     collections: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -83,12 +93,12 @@ const snippetSchema = new mongoose.Schema(
   }
 );
 
-
 snippetSchema.index({ title: 'text', description: 'text', tags: 'text' }, { default_language: 'english', language_override: 'searchLang' });
 snippetSchema.index({ language: 1, isPublic: 1 });
 snippetSchema.index({ author: 1 });
+snippetSchema.index({ likeCount: -1 });
+snippetSchema.index({ views: -1 });
 
 const Snippet = mongoose.model('Snippet', snippetSchema);
 
 export default Snippet;
-

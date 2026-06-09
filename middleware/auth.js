@@ -8,12 +8,15 @@ export const protect = async (req, res, next) => {
     try {
       token = req.headers.authorization.split(' ')[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = await User.findById(decoded.id).select('-password');
+      req.user = await User.findById(decoded.id).select('-password -refreshToken');
       if (!req.user) {
         return res.status(401).json({ message: 'User not found' });
       }
       next();
     } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        return res.status(401).json({ message: 'Token expired', code: 'TOKEN_EXPIRED' });
+      }
       return res.status(401).json({ message: 'Not authorized, token failed' });
     }
   } else {
@@ -33,7 +36,7 @@ export const optionalAuth = async (req, res, next) => {
       }
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       try {
-        req.user = await User.findById(decoded.id).select('-password');
+        req.user = await User.findById(decoded.id).select('-password -refreshToken');
         if (!req.user) {
           req.user = null;
         }
@@ -49,4 +52,3 @@ export const optionalAuth = async (req, res, next) => {
   }
   next();
 };
-

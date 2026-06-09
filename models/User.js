@@ -21,11 +21,39 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: true,
-      minlength: 6,
+      minlength: 8,
     },
     avatar: {
       type: String,
       default: '',
+    },
+    bio: {
+      type: String,
+      trim: true,
+      maxlength: 300,
+      default: '',
+    },
+    website: {
+      type: String,
+      trim: true,
+      maxlength: 200,
+      default: '',
+    },
+    githubUrl: {
+      type: String,
+      trim: true,
+      maxlength: 200,
+      default: '',
+    },
+    likedSnippets: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Snippet',
+      },
+    ],
+    refreshToken: {
+      type: String,
+      default: null,
     },
   },
   {
@@ -38,7 +66,7 @@ userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) {
     return next();
   }
-  const salt = await bcrypt.genSalt(10);
+  const salt = await bcrypt.genSalt(12);
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });
@@ -51,4 +79,3 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 const User = mongoose.model('User', userSchema);
 
 export default User;
-
