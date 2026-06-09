@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
+import compression from 'compression';
 import authRoutes from './routes/authRoutes.js';
 import snippetRoutes from './routes/snippetRoutes.js';
 import collectionRoutes from './routes/collectionRoutes.js';
@@ -14,6 +15,9 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// ─── Response compression ───────────────────────────────────────────────────
+app.use(compression());
 
 // ─── Security headers ─────────────────────────────────────────────────────────
 app.use(helmet({

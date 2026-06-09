@@ -99,6 +99,13 @@ snippetSchema.index({ author: 1 });
 snippetSchema.index({ likeCount: -1 });
 snippetSchema.index({ views: -1 });
 
+// Compound sorting indexes for fast list queries
+snippetSchema.index({ isPublic: 1, createdAt: -1 });
+snippetSchema.index({ author: 1, createdAt: -1 });
+snippetSchema.index({ isPublic: 1, views: -1 });
+snippetSchema.index({ isPublic: 1, likeCount: -1 });
+snippetSchema.index({ isPublic: 1, forkCount: -1 });
+
 const Snippet = mongoose.model('Snippet', snippetSchema);
 
 export default Snippet;

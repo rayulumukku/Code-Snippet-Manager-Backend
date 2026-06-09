@@ -39,7 +39,8 @@ router.get('/', optionalAuth, async (req, res) => {
         .populate('author', 'username avatar')
         .sort(q ? { score: { $meta: 'textScore' } } : { createdAt: -1 })
         .skip(skip)
-        .limit(parseInt(limit));
+        .limit(parseInt(limit))
+        .lean();
 
       const total = await Snippet.countDocuments(query);
 
@@ -77,7 +78,8 @@ router.get('/', optionalAuth, async (req, res) => {
       const collections = await Collection.find(query)
         .populate('owner', 'username')
         .populate('snippets', 'title language')
-        .sort({ createdAt: -1 });
+        .sort({ createdAt: -1 })
+        .lean();
 
       return res.json({
         type: 'collections',
