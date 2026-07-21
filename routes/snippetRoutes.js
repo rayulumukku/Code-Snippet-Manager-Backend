@@ -424,4 +424,100 @@ router.delete('/:id/like', protect, async (req, res) => {
   }
 });
 
+// ─── GET PINNED SNIPPETS ───────────────────────────────────────────────────────
+router.get('/pinned', optionalAuth, async (req, res) => {
+  try {
+    const privacyFilter = req.user
+      ? { $or: [{ isPublic: true }, { author: req.user._id }] }
+      : { isPublic: true };
+
+    const query = { $and: [privacyFilter, { isPinned: true }] };
+
+    const snippets = await Snippet.find(query)
+      .populate('author', 'username avatar')
+      .sort({ pinnedOrder: 1, pinnedAt: -1 })
+      .limit(10)
+      .lean();
+
+    const userId = req.user?._id?.toString();
+    const enriched = snippets.map((s) => ({
+      ...s,
+      isLiked: userId ? (s.likes || []).some((id) => id.toString() === userId) : false,
+    }));
+
+    res.json(enriched);
+  } catch (error) {
+    console.error('Get pinned snippets error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// ─── PIN SNIPPET ──────────────────────────────────────────────────────────────
+router.post('/:id/pin', protect, async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ message: 'Snippet not found' });
+    }
+
+    const snippet = await Snippet.findById(req.params.id);
+    if (!snippet) return res.status(404).json({ message: 'Snippet not found' });
+
+    if (snippet.author.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Only snippet owner can pin this snippet' });
+    }
+
+    const countPinned = await Snippet.countDocuments({ author: req.user._id, isPinned: true });
+    if (countPinned >= 6) {
+      return res.status(400).json({ message: 'Maximum of 6 pinned snippets allowed' });
+    }
+
+    const updated = await Snippet.findByIdAndUpdate(
+      req.params.id,
+      {
+        isPinned: true,
+        pinnedBy: req.user._id,
+        pinnedAt: new Date(),
+        pinnedOrder: countPinned + 1,
+      },
+      { new: true }
+    ).populate('author', 'username avatar');
+
+    res.json({ message: 'Snippet pinned', snippet: updated });
+  } catch (error) {
+    console.error('Pin snippet error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// ─── UNPIN SNIPPET ────────────────────────────────────────────────────────────
+router.delete('/:id/pin', protect, async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ message: 'Snippet not found' });
+    }
+
+    const snippet = await Snippet.findById(req.params.id);
+    if (!snippet) return res.status(404).json({ message: 'Snippet not found' });
+
+    if (snippet.author.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Only snippet owner can unpin this snippet' });
+    }
+
+    const updated = await Snippet.findByIdAndUpdate(
+      req.params.id,
+      {
+        isPinned: false,
+        pinnedBy: null,
+        pinnedAt: null,
+      },
+      { new: true }
+    ).populate('author', 'username avatar');
+
+    res.json({ message: 'Snippet unpinned', snippet: updated });
+  } catch (error) {
+    console.error('Unpin snippet error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 export default router;

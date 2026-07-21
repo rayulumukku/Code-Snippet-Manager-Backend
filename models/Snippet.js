@@ -100,6 +100,27 @@ const snippetSchema = new mongoose.Schema(
         ref: 'Collection',
       },
     ],
+    favoriteCount: {
+      type: Number,
+      default: 0,
+    },
+    isPinned: {
+      type: Boolean,
+      default: false,
+    },
+    pinnedOrder: {
+      type: Number,
+      default: 0,
+    },
+    pinnedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    pinnedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -116,6 +137,7 @@ snippetSchema.index(
 );
 snippetSchema.index({ language: 1, isPublic: 1 });
 snippetSchema.index({ isPublic: 1, language: 1, createdAt: -1 });
+snippetSchema.index({ isPinned: 1, pinnedOrder: 1 });
 snippetSchema.index({ author: 1 });
 snippetSchema.index({ likeCount: -1 });
 snippetSchema.index({ views: -1 });

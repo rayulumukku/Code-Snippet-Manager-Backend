@@ -10,6 +10,7 @@ import authRoutes from './routes/authRoutes.js';
 import snippetRoutes from './routes/snippetRoutes.js';
 import collectionRoutes from './routes/collectionRoutes.js';
 import searchRoutes from './routes/searchRoutes.js';
+import favoriteRoutes from './routes/favoriteRoutes.js';
 
 dotenv.config();
 
@@ -71,6 +72,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/snippets', snippetRoutes);
 app.use('/api/collections', collectionRoutes);
 app.use('/api/search', searchRoutes);
+app.use('/api/favorites', favoriteRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running', timestamp: new Date().toISOString() });
