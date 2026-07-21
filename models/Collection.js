@@ -34,6 +34,13 @@ const collectionSchema = new mongoose.Schema(
   }
 );
 
+collectionSchema.index(
+  { name: 'text', description: 'text' },
+  { weights: { name: 10, description: 3 }, default_language: 'english' }
+);
+collectionSchema.index({ isPublic: 1, createdAt: -1 });
+collectionSchema.index({ owner: 1, createdAt: -1 });
+
 const Collection = mongoose.model('Collection', collectionSchema);
 
 export default Collection;

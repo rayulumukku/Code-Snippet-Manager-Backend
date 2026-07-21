@@ -106,8 +106,16 @@ const snippetSchema = new mongoose.Schema(
   }
 );
 
-snippetSchema.index({ title: 'text', description: 'text', tags: 'text' }, { default_language: 'english', language_override: 'searchLang' });
+snippetSchema.index(
+  { title: 'text', tags: 'text', description: 'text', code: 'text' },
+  {
+    weights: { title: 10, tags: 8, description: 5, code: 2 },
+    default_language: 'english',
+    language_override: 'searchLang',
+  }
+);
 snippetSchema.index({ language: 1, isPublic: 1 });
+snippetSchema.index({ isPublic: 1, language: 1, createdAt: -1 });
 snippetSchema.index({ author: 1 });
 snippetSchema.index({ likeCount: -1 });
 snippetSchema.index({ views: -1 });
