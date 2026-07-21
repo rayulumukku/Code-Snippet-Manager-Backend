@@ -150,13 +150,27 @@ router.get('/my', protect, async (req, res) => {
 // ─── GET POPULAR TAGS ─────────────────────────────────────────────────────────
 router.get('/tags', async (req, res) => {
   try {
-    const result = await Snippet.aggregate([
+    const { limit = 50, search } = req.query;
+    const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100);
+
+    const pipeline = [
       { $match: { isPublic: true, tags: { $exists: true, $not: { $size: 0 } } } },
       { $unwind: '$tags' },
+    ];
+
+    if (search && typeof search === 'string' && search.trim()) {
+      pipeline.push({
+        $match: { tags: { $regex: search.trim().toLowerCase(), $options: 'i' } },
+      });
+    }
+
+    pipeline.push(
       { $group: { _id: '$tags', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
-      { $limit: 50 },
-    ]);
+      { $limit: parsedLimit }
+    );
+
+    const result = await Snippet.aggregate(pipeline);
     res.json(result.map(r => ({ tag: r._id, count: r.count })));
   } catch (error) {
     console.error('Get tags error:', error);
@@ -209,6 +223,8 @@ router.post(
     body('title').trim().notEmpty().withMessage('Title is required'),
     body('code').notEmpty().withMessage('Code is required'),
     body('language').notEmpty().withMessage('Language is required'),
+    body('tags').optional().isArray({ max: 10 }).withMessage('Tags must be an array with at most 10 items'),
+    body('tags.*').optional().isString().trim().isLength({ max: 30 }).withMessage('Each tag must be 30 characters or less'),
   ],
   async (req, res) => {
     try {
@@ -217,7 +233,7 @@ router.post(
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const profanityError = validateProfanity(req.body, ['title', 'description']);
+      const profanityError = validateProfanity(req.body, ['title', 'description', 'tags']);
       if (profanityError) return res.status(400).json({ message: profanityError });
 
       // Sanitize: only allow whitelisted fields
@@ -248,7 +264,7 @@ router.put('/:id', protect, async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to update this snippet' });
     }
 
-    const profanityError = validateProfanity(req.body, ['title', 'description']);
+    const profanityError = validateProfanity(req.body, ['title', 'description', 'tags']);
     if (profanityError) return res.status(400).json({ message: profanityError });
 
     const safeData = pickAllowedFields(req.body, SNIPPET_ALLOWED_FIELDS);

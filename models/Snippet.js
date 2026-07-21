@@ -48,6 +48,19 @@ const snippetSchema = new mongoose.Schema(
     tags: {
       type: [String],
       default: [],
+      set: (v) => {
+        if (!Array.isArray(v)) return [];
+        const cleaned = v
+          .map((t) => (typeof t === 'string' ? t.trim().toLowerCase() : ''))
+          .filter((t) => t.length > 0 && t.length <= 30);
+        return Array.from(new Set(cleaned)).slice(0, 10);
+      },
+      validate: [
+        {
+          validator: (v) => Array.isArray(v) && v.length <= 10,
+          message: 'A snippet can have at most 10 tags',
+        },
+      ],
     },
     isPublic: {
       type: Boolean,
@@ -105,6 +118,8 @@ snippetSchema.index({ author: 1, createdAt: -1 });
 snippetSchema.index({ isPublic: 1, views: -1 });
 snippetSchema.index({ isPublic: 1, likeCount: -1 });
 snippetSchema.index({ isPublic: 1, forkCount: -1 });
+snippetSchema.index({ tags: 1 });
+snippetSchema.index({ isPublic: 1, tags: 1, createdAt: -1 });
 
 const Snippet = mongoose.model('Snippet', snippetSchema);
 

@@ -26,8 +26,19 @@ export const censorProfanity = (text) => {
 
 export const validateProfanity = (data, fields) => {
   for (const field of fields) {
-    if (data[field] && hasProfanity(data[field])) {
+    const value = data[field];
+    if (!value) continue;
+
+    if (typeof value === 'string' && hasProfanity(value)) {
       return `Profanity detected in ${field}. Please use appropriate language.`;
+    }
+
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (typeof item === 'string' && hasProfanity(item)) {
+          return `Profanity detected in ${field}. Please use appropriate language.`;
+        }
+      }
     }
   }
   return null;
