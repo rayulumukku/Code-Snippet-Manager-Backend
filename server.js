@@ -11,6 +11,7 @@ import snippetRoutes from './routes/snippetRoutes.js';
 import collectionRoutes from './routes/collectionRoutes.js';
 import searchRoutes from './routes/searchRoutes.js';
 import favoriteRoutes from './routes/favoriteRoutes.js';
+import versionRoutes from './routes/versionRoutes.js';
 
 dotenv.config();
 
@@ -70,6 +71,7 @@ app.use(cookieParser());
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/snippets', snippetRoutes);
+app.use('/api/snippets', versionRoutes);
 app.use('/api/collections', collectionRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/favorites', favoriteRoutes);

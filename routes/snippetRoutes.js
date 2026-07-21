@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import Snippet from '../models/Snippet.js';
 import Collection from '../models/Collection.js';
 import User from '../models/User.js';
+import SnippetVersion from '../models/SnippetVersion.js';
 import { protect, optionalAuth } from '../middleware/auth.js';
 import { validateProfanity } from '../utils/profanityFilter.js';
 
@@ -268,6 +269,27 @@ router.put('/:id', protect, async (req, res) => {
     if (profanityError) return res.status(400).json({ message: profanityError });
 
     const safeData = pickAllowedFields(req.body, SNIPPET_ALLOWED_FIELDS);
+
+    // Save pre-update state snapshot if code/title/description changes
+    const isCodeChanged = safeData.code !== undefined && safeData.code !== snippet.code;
+    const isTitleChanged = safeData.title !== undefined && safeData.title !== snippet.title;
+
+    if (isCodeChanged || isTitleChanged) {
+      const latestVersionDoc = await SnippetVersion.findOne({ snippet: snippet._id }).sort({ versionNumber: -1 });
+      const nextVer = (latestVersionDoc?.versionNumber || 0) + 1;
+
+      await SnippetVersion.create({
+        snippet: snippet._id,
+        versionNumber: nextVer,
+        title: snippet.title,
+        code: snippet.code,
+        description: snippet.description || '',
+        language: snippet.language,
+        tags: snippet.tags || [],
+        changeSummary: isCodeChanged ? 'Updated snippet code' : 'Updated snippet title/metadata',
+        createdBy: req.user._id,
+      });
+    }
 
     const updated = await Snippet.findByIdAndUpdate(req.params.id, safeData, {
       new: true,
