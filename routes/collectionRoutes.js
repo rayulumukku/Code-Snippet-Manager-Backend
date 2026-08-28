@@ -182,7 +182,10 @@ router.post('/:id/snippets/:snippetId', protect, async (req, res) => {
     }
 
   
-    if (!collection.snippets.includes(req.params.snippetId)) {
+    const alreadyInCollection = collection.snippets.some(
+      (id) => id.toString() === req.params.snippetId
+    );
+    if (!alreadyInCollection) {
       collection.snippets.push(req.params.snippetId);
       await collection.save();
     }

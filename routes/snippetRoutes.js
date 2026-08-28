@@ -179,6 +179,34 @@ router.get('/tags', async (req, res) => {
   }
 });
 
+// ─── GET PINNED SNIPPETS ───────────────────────────────────────────────────────
+router.get('/pinned', optionalAuth, async (req, res) => {
+  try {
+    const privacyFilter = req.user
+      ? { $or: [{ isPublic: true }, { author: req.user._id }] }
+      : { isPublic: true };
+
+    const query = { $and: [privacyFilter, { isPinned: true }] };
+
+    const snippets = await Snippet.find(query)
+      .populate('author', 'username avatar')
+      .sort({ pinnedOrder: 1, pinnedAt: -1 })
+      .limit(10)
+      .lean();
+
+    const userId = req.user?._id?.toString();
+    const enriched = snippets.map((s) => ({
+      ...s,
+      isLiked: userId ? (s.likes || []).some((id) => id.toString() === userId) : false,
+    }));
+
+    res.json(enriched);
+  } catch (error) {
+    console.error('Get pinned snippets error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // ─── GET SINGLE SNIPPET ───────────────────────────────────────────────────────
 router.get('/:id', optionalAuth, async (req, res) => {
   try {
@@ -442,34 +470,6 @@ router.delete('/:id/like', protect, async (req, res) => {
     res.json({ message: 'Unliked', likeCount: Math.max(0, snippet.likeCount - 1), isLiked: false });
   } catch (error) {
     console.error('Unlike snippet error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// ─── GET PINNED SNIPPETS ───────────────────────────────────────────────────────
-router.get('/pinned', optionalAuth, async (req, res) => {
-  try {
-    const privacyFilter = req.user
-      ? { $or: [{ isPublic: true }, { author: req.user._id }] }
-      : { isPublic: true };
-
-    const query = { $and: [privacyFilter, { isPinned: true }] };
-
-    const snippets = await Snippet.find(query)
-      .populate('author', 'username avatar')
-      .sort({ pinnedOrder: 1, pinnedAt: -1 })
-      .limit(10)
-      .lean();
-
-    const userId = req.user?._id?.toString();
-    const enriched = snippets.map((s) => ({
-      ...s,
-      isLiked: userId ? (s.likes || []).some((id) => id.toString() === userId) : false,
-    }));
-
-    res.json(enriched);
-  } catch (error) {
-    console.error('Get pinned snippets error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
