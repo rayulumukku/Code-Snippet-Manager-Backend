@@ -29,6 +29,8 @@ app.use(helmet({
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 const allowedOrigins = [
   'https://codesnippetrayulu.vercel.app',
+  'https://rayulumukku.com',
+  'https://www.rayulumukku.com',
   'http://localhost:5173',
   'http://localhost:3000',
 ];

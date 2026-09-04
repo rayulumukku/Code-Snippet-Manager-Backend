@@ -51,7 +51,7 @@ router.get('/', protect, async (req, res) => {
 router.get('/ids', protect, async (req, res) => {
   try {
     const favorites = await Favorite.find({ user: req.user._id }).select('snippet').lean();
-    const ids = favorites.map((f) => f.snippet.toString());
+    const ids = favorites.filter((f) => f.snippet).map((f) => f.snippet.toString());
     res.json(ids);
   } catch (error) {
     console.error('Get favorite IDs error:', error);

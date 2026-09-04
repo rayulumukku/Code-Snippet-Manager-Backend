@@ -5,6 +5,7 @@ import Snippet from '../models/Snippet.js';
 import Collection from '../models/Collection.js';
 import User from '../models/User.js';
 import SnippetVersion from '../models/SnippetVersion.js';
+import Favorite from '../models/Favorite.js';
 import { protect, optionalAuth } from '../middleware/auth.js';
 import { validateProfanity } from '../utils/profanityFilter.js';
 
@@ -345,11 +346,15 @@ router.delete('/:id', protect, async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to delete this snippet' });
     }
 
-    // Clean up references in collections
-    await Collection.updateMany(
-      { snippets: req.params.id },
-      { $pull: { snippets: req.params.id } }
-    );
+    // Clean up references in collections, favorites, and versions
+    await Promise.all([
+      Collection.updateMany(
+        { snippets: req.params.id },
+        { $pull: { snippets: req.params.id } }
+      ),
+      Favorite.deleteMany({ snippet: req.params.id }),
+      SnippetVersion.deleteMany({ snippet: req.params.id }),
+    ]);
 
     await Snippet.findByIdAndDelete(req.params.id);
     res.json({ message: 'Snippet deleted successfully' });

@@ -40,15 +40,15 @@ router.get('/', optionalAuth, async (req, res) => {
 
       const searchConditions = [];
 
-      // Query matching logic ($text search + regex symbol fallback)
+      // Query matching logic (regex matching across title, tags, code, description)
       if (trimmedQ) {
         const escaped = escapeRegex(trimmedQ);
         searchConditions.push({
           $or: [
-            { $text: { $search: trimmedQ } },
             { title: { $regex: escaped, $options: 'i' } },
             { tags: { $regex: '^' + escaped, $options: 'i' } },
             { code: { $regex: escaped, $options: 'i' } },
+            { description: { $regex: escaped, $options: 'i' } },
           ],
         });
       }
@@ -99,9 +99,7 @@ router.get('/', optionalAuth, async (req, res) => {
 
       // Sorting strategy
       let sortOptions = { createdAt: -1 };
-      if (sort === 'relevance' && trimmedQ) {
-        sortOptions = { score: { $meta: 'textScore' }, createdAt: -1 };
-      } else if (sort === 'oldest') {
+      if (sort === 'oldest') {
         sortOptions = { createdAt: 1 };
       } else if (sort === 'views') {
         sortOptions = { views: -1 };
@@ -109,7 +107,8 @@ router.get('/', optionalAuth, async (req, res) => {
         sortOptions = { likeCount: -1 };
       } else if (sort === 'forks') {
         sortOptions = { forkCount: -1 };
-      } else if (sort === 'newest') {
+      } else {
+        // Default: newest / relevance
         sortOptions = { createdAt: -1 };
       }
 
@@ -159,7 +158,6 @@ router.get('/', optionalAuth, async (req, res) => {
         const escaped = escapeRegex(trimmedQ);
         searchConditions.push({
           $or: [
-            { $text: { $search: trimmedQ } },
             { name: { $regex: escaped, $options: 'i' } },
             { description: { $regex: escaped, $options: 'i' } },
           ],
