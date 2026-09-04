@@ -230,7 +230,8 @@ router.get('/:id', optionalAuth, async (req, res) => {
 
     if (!snippet) return res.status(404).json({ message: 'Snippet not found' });
 
-    if (!snippet.isPublic && (!req.user || snippet.author._id.toString() !== req.user._id.toString())) {
+    const authorId = (snippet.author?._id || snippet.author)?.toString();
+    if (!snippet.isPublic && (!req.user || authorId !== req.user._id.toString())) {
       return res.status(403).json({ message: 'Access denied' });
     }
 

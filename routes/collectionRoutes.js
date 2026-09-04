@@ -44,7 +44,8 @@ router.get('/:id', optionalAuth, async (req, res) => {
     }
 
 
-    if (!collection.isPublic && (!req.user || collection.owner._id.toString() !== req.user._id.toString())) {
+    const ownerId = (collection.owner?._id || collection.owner)?.toString();
+    if (!collection.isPublic && (!req.user || ownerId !== req.user._id.toString())) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
